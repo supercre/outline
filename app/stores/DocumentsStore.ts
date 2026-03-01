@@ -484,6 +484,39 @@ export default class DocumentsStore extends Store<Document> {
   };
 
   @action
+  semanticSearch = async (options: SearchParams): Promise<SearchResult[]> => {
+    const compactedOptions = omitBy(options, (o) => !o);
+    const res = await client.post("/aiAnswers.semanticSearch", {
+      ...compactedOptions,
+    });
+    invariant(res?.data, "Search response should be available");
+
+    // add the documents and associated policies to the store
+    runInAction("DocumentsStore#semanticSearch", () => {
+      res.data.forEach((result: SearchResult) => this.add(result.document));
+      this.addPolicies(res.policies);
+    });
+
+    // store a reference to the document model in the search cache instead
+    // of the original result from the API.
+    const results: SearchResult[] = compact(
+      res.data.map((result: SearchResult) => {
+        const document = this.data.get(result.document.id);
+        if (!document) {
+          return null;
+        }
+        return {
+          id: document.id,
+          ranking: result.ranking,
+          context: result.context,
+          document,
+        };
+      })
+    );
+    return results;
+  };
+
+  @action
   prefetchDocument = async (id: string) => {
     if (!this.get(id)) {
       return this.fetch(id, {

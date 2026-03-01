@@ -36,3 +36,19 @@ export const AiAnswersWriteSchema = z.object({
 });
 
 export type AiAnswersWriteReq = z.infer<typeof AiAnswersWriteSchema>;
+
+export const AiAnswersSemanticSearchSchema = z.object({
+  body: z.object({
+    query: z.string().min(1).max(1000),
+    collectionId: z.string().uuid().optional(),
+    userId: z.string().uuid().optional(),
+    dateFilter: z.string().optional(),
+    statusFilter: z.array(z.string()).optional(),
+    offset: z.number().int().min(0).default(0),
+    limit: z.number().int().min(1).max(100).default(25),
+  }),
+});
+
+export type AiAnswersSemanticSearchReq = z.infer<
+  typeof AiAnswersSemanticSearchSchema
+>;

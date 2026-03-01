@@ -69,6 +69,7 @@ function Search() {
     ? (params.getAll("statusFilter") as TStatusFilter[])
     : [TStatusFilter.Published, TStatusFilter.Draft];
   const titleFilter = params.get("titleFilter") === "true";
+  const semanticFilter = params.get("semanticFilter") === "true";
   const sort = (params.get("sort") as TSortFilter) ?? "";
   const direction = (params.get("direction") as TDirectionFilter) ?? "";
 
@@ -82,7 +83,8 @@ function Search() {
     user: !document || !!(document && query),
     documentType: isSearchable,
     date: isSearchable,
-    title: !!query && !document,
+    title: !!query && !document && !semanticFilter,
+    semantic: !document && !titleFilter,
     sort: isSearchable,
   };
 
@@ -94,6 +96,7 @@ function Search() {
       userId,
       dateFilter,
       titleFilter,
+      semanticFilter,
       documentId,
       sort,
       direction,
@@ -105,6 +108,7 @@ function Search() {
       userId,
       dateFilter,
       titleFilter,
+      semanticFilter,
       documentId,
       sort,
       direction,
@@ -126,11 +130,21 @@ function Search() {
       return async () =>
         titleFilter
           ? await documents.searchTitles(filters)
-          : await documents.search(filters);
+          : semanticFilter
+            ? await documents.semanticSearch(filters)
+            : await documents.search(filters);
     }
 
     return () => Promise.resolve([] as SearchResult[]);
-  }, [query, titleFilter, filters, searches, documents, isSearchable]);
+  }, [
+    query,
+    titleFilter,
+    semanticFilter,
+    filters,
+    searches,
+    documents,
+    isSearchable,
+  ]);
 
   const { data, next, end, error, loading } = usePaginatedRequest(requestFn, {
     limit: Pagination.defaultLimit,
@@ -160,6 +174,7 @@ function Search() {
     dateFilter?: TDateFilter;
     statusFilter?: TStatusFilter[];
     titleFilter?: boolean | undefined;
+    semanticFilter?: boolean | undefined;
     sort?: string | undefined;
     direction?: string | undefined;
   }) => {
@@ -294,9 +309,26 @@ function Search() {
                   height={14}
                   label={t("Search titles only")}
                   onChange={(checked: boolean) => {
-                    handleFilterChange({ titleFilter: checked });
+                    handleFilterChange({
+                      titleFilter: checked,
+                      semanticFilter: checked ? false : undefined,
+                    });
                   }}
                   checked={titleFilter}
+                />
+              )}
+              {filterVisibility.semantic && (
+                <SearchSemanticFilter
+                  width={26}
+                  height={14}
+                  label={t("AI search")}
+                  onChange={(checked: boolean) => {
+                    handleFilterChange({
+                      semanticFilter: checked,
+                      titleFilter: checked ? false : undefined,
+                    });
+                  }}
+                  checked={semanticFilter}
                 />
               )}
             </Flex>
@@ -408,6 +440,14 @@ const Filters = styled(HStack)`
 `;
 
 const SearchTitlesFilter = styled(Switch)`
+  white-space: nowrap;
+  margin-left: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 400;
+`;
+
+const SearchSemanticFilter = styled(Switch)`
   white-space: nowrap;
   margin-left: 8px;
   margin-top: 8px;
