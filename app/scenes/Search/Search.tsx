@@ -30,6 +30,7 @@ import useStores from "~/hooks/useStores";
 import type { SearchResult } from "~/types";
 import { searchPath } from "~/utils/routeHelpers";
 import { decodeURIComponentSafe } from "~/utils/urls";
+import AiAnswer from "./components/AiAnswer";
 import CollectionFilter from "./components/CollectionFilter";
 import DateFilter from "./components/DateFilter";
 import { DocumentFilter } from "./components/DocumentFilter";
@@ -312,6 +313,7 @@ function Search() {
         </form>
         {isSearchable ? (
           <>
+            {query && data && data.length > 0 && <AiAnswer query={query} />}
             {error ? (
               <Fade>
                 <Centered column>

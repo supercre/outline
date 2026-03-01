@@ -17240,6 +17240,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"openai@npm:^6.15.0":
+  version: 6.15.0
+  resolution: "openai@npm:6.15.0"
+  peerDependencies:
+    ws: ^8.18.0
+    zod: ^3.25 || ^4.0
+  peerDependenciesMeta:
+    ws:
+      optional: true
+    zod:
+      optional: true
+  bin:
+    openai: bin/cli
+  checksum: 10c0/08400449dac9be2629f051045fb46b0384a1e9ba9738b72c23853a443857e3a81f237c2d306fbd287689b9c15c18790203893fc31611976617a6be474489df8e
+  languageName: node
+  linkType: hard
+
 "option@npm:~0.2.1":
   version: 0.2.4
   resolution: "option@npm:0.2.4"
@@ -17479,6 +17496,7 @@ __metadata:
     nodemailer: "npm:^7.0.11"
     nodemon: "npm:^3.1.11"
     octokit: "npm:^3.2.2"
+    openai: "npm:^6.15.0"
     outline-icons: "npm:^4.0.0"
     oxlint: "npm:1.11.2"
     oxlint-tsgolint: "npm:^0.1.6"

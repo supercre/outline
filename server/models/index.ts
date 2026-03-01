@@ -16,6 +16,8 @@ export { default as Comment } from "./Comment";
 
 export { default as Document } from "./Document";
 
+export { default as DocumentEmbedding } from "./DocumentEmbedding";
+
 export { default as Event } from "./Event";
 
 export { default as FileOperation } from "./FileOperation";

@@ -1,0 +1,6 @@
+{
+  "id": "ai-answers",
+  "name": "AI Answers",
+  "priority": 200,
+  "description": "Adds AI-powered answers to search results using OpenAI."
+}
