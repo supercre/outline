@@ -1,3 +1,5 @@
+import MarkdownIt from "markdown-it";
+import { Slice } from "prosemirror-model";
 import * as React from "react";
 import { useState, useCallback, useRef, useEffect } from "react";
 import styled from "styled-components";
@@ -7,6 +9,8 @@ import { s } from "@shared/styles";
 import { client } from "~/utils/ApiClient";
 import Logger from "~/utils/Logger";
 import { useEditor } from "./EditorContext";
+
+const md = new MarkdownIt({ html: false, breaks: true, linkify: true });
 
 type WritingAction =
   | "freeform"
@@ -96,11 +100,11 @@ export function AIPromptDialog({
       let left = coords.left;
 
       // Keep within viewport
-      if (left + 380 > window.innerWidth) {
-        left = window.innerWidth - 392;
+      if (left + 480 > window.innerWidth) {
+        left = window.innerWidth - 492;
       }
-      if (top + 300 > window.innerHeight) {
-        top = coords.top - 308;
+      if (top + 400 > window.innerHeight) {
+        top = coords.top - 408;
       }
 
       setPosition({ top: Math.max(8, top), left: Math.max(8, left) });
@@ -144,19 +148,24 @@ export function AIPromptDialog({
     }
 
     const { state, dispatch } = view;
-    const tr = state.tr;
+    let tr = state.tr;
 
     // Parse markdown result into ProseMirror nodes
     const parsed = parser.parse(result);
 
     if (parsed) {
-      // Extract the content nodes (skip the doc wrapper)
-      const fragment = parsed.content;
+      const content = parsed.content;
+      const slice = new Slice(content, 0, 0);
 
       if (selectedText) {
-        tr.replaceWith(from, to, fragment);
+        // Delete the selected text first, then insert at block boundary
+        tr = tr.delete(from, to);
+        tr = tr.replaceRange(from, from, slice);
       } else {
-        tr.replaceWith(from, from, fragment);
+        // Resolve position to find the end of current block, then insert after it
+        const $pos = tr.doc.resolve(from);
+        const insertPos = $pos.after($pos.depth);
+        tr = tr.replaceRange(insertPos, insertPos, slice);
       }
     } else {
       // Fallback to plain text if parsing fails
@@ -225,7 +234,9 @@ export function AIPromptDialog({
 
         {result && (
           <ResultArea>
-            <ResultText>{result}</ResultText>
+            <ResultText
+              dangerouslySetInnerHTML={{ __html: md.render(result) }}
+            />
           </ResultArea>
         )}
 
@@ -285,8 +296,8 @@ const Backdrop = styled.div`
 const DialogWrapper = styled.div`
   position: fixed;
   z-index: 1000;
-  width: 380px;
-  max-height: 420px;
+  width: 480px;
+  max-height: 520px;
   background: ${s("menuBackground")};
   border: 1px solid ${s("divider")};
   border-radius: 8px;
@@ -372,7 +383,7 @@ const ErrorText = styled.div`
 
 const ResultArea = styled.div`
   padding: 12px 16px;
-  max-height: 240px;
+  max-height: 340px;
   overflow-y: auto;
 `;
 
@@ -380,8 +391,114 @@ const ResultText = styled.div`
   font-size: 14px;
   line-height: 1.6;
   color: ${s("text")};
-  white-space: pre-wrap;
   word-break: break-word;
+
+  > *:first-child {
+    margin-top: 0;
+  }
+
+  > *:last-child {
+    margin-bottom: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 12px 0 6px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h1 {
+    font-size: 1.2em;
+  }
+
+  h2 {
+    font-size: 1.1em;
+  }
+
+  h3 {
+    font-size: 1em;
+  }
+
+  p {
+    margin: 6px 0;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  code {
+    background: ${s("codeBackground")};
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  pre {
+    background: ${s("codeBackground")};
+    border-radius: 4px;
+    padding: 8px;
+    overflow-x: auto;
+    margin: 6px 0;
+
+    code {
+      background: none;
+      padding: 0;
+    }
+  }
+
+  ul,
+  ol {
+    margin: 6px 0;
+    padding-left: 20px;
+  }
+
+  li {
+    margin: 2px 0;
+  }
+
+  blockquote {
+    border-left: 3px solid ${s("textTertiary")};
+    margin: 6px 0;
+    padding: 2px 10px;
+    color: ${s("textSecondary")};
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid ${s("divider")};
+    margin: 8px 0;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 6px 0;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid ${s("divider")};
+    padding: 4px 8px;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  th {
+    background: ${s("sidebarBackground")};
+    font-weight: 600;
+  }
+
+  a {
+    color: ${s("accent")};
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 `;
 
 const ButtonRow = styled.div`

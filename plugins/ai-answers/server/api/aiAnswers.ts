@@ -277,12 +277,13 @@ router.post(
     results.sort((a, b) => b.ranking - a.ranking);
     const paginatedResults = results.slice(offset, offset + limit);
 
-    // Load full document objects
+    // Load full document objects with membership scope
     const documentIds = paginatedResults.map((r) => r.documentId);
-    const documents = await Document.findAll({
-      where: { id: documentIds },
-    });
-    const docMap = new Map(documents.map((d) => [d.id, d]));
+    const documents = await Promise.all(
+      documentIds.map((id) => Document.findByPk(id, { userId: user.id }))
+    );
+    const loadedDocs = documents.filter(Boolean) as Document[];
+    const docMap = new Map(loadedDocs.map((d) => [d.id, d]));
 
     // Build response matching documents.search format
     const data = await Promise.all(
@@ -311,7 +312,7 @@ router.post(
     ctx.body = {
       pagination: { ...ctx.state.pagination, total },
       data: filteredData,
-      policies: presentPolicies(user, documents),
+      policies: presentPolicies(user, loadedDocs),
     };
   }
 );
