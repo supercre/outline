@@ -1,7 +1,10 @@
+import crypto from "node:crypto";
 import type { JobOptions } from "bull";
+import { QueryTypes } from "sequelize";
 import { Document, DocumentEmbedding } from "@server/models";
 import Logger from "@server/logging/Logger";
 import { BaseTask, TaskPriority } from "@server/queues/tasks/base/BaseTask";
+import { sequelize } from "@server/storage/database";
 import { Op } from "sequelize";
 import { generateEmbedding } from "../services/OpenAIService";
 
@@ -23,17 +26,28 @@ export default class IndexDocumentEmbeddingTask extends BaseTask<Props> {
 
     const chunks = splitIntoChunks(document.text, 500);
 
-    // Process chunks and generate embeddings
+    // Process chunks and generate embeddings using raw SQL for pgvector compatibility
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const embedding = await generateEmbedding(chunk);
+      const embeddingStr = `[${embedding.join(",")}]`;
 
-      await DocumentEmbedding.upsert({
-        documentId,
-        chunkIndex: i,
-        chunkText: chunk,
-        embedding,
-      });
+      await sequelize.query(
+        `INSERT INTO document_embeddings (id, "documentId", "chunkIndex", "chunkText", embedding, "createdAt", "updatedAt")
+         VALUES (:id, :documentId, :chunkIndex, :chunkText, :embedding::vector, NOW(), NOW())
+         ON CONFLICT ("documentId", "chunkIndex")
+         DO UPDATE SET "chunkText" = :chunkText, embedding = :embedding::vector, "updatedAt" = NOW()`,
+        {
+          replacements: {
+            id: crypto.randomUUID(),
+            documentId,
+            chunkIndex: i,
+            chunkText: chunk,
+            embedding: embeddingStr,
+          },
+          type: QueryTypes.INSERT,
+        }
+      );
     }
 
     // Remove stale chunks that are beyond current chunk count

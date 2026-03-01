@@ -4,6 +4,7 @@ import env from "./env";
 import aiAnswers from "./api/aiAnswers";
 import DocumentEmbeddingProcessor from "./processors/DocumentEmbeddingProcessor";
 import GenerateAnswerTask from "./tasks/GenerateAnswerTask";
+import BulkIndexEmbeddingsTask from "./tasks/BulkIndexEmbeddingsTask";
 import IndexDocumentEmbeddingTask from "./tasks/IndexDocumentEmbeddingTask";
 
 const enabled = !!env.OPENAI_API_KEY;
@@ -26,6 +27,10 @@ if (enabled) {
     {
       type: Hook.Task,
       value: IndexDocumentEmbeddingTask,
+    },
+    {
+      type: Hook.Task,
+      value: BulkIndexEmbeddingsTask,
     },
   ]);
 }

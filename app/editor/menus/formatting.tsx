@@ -21,6 +21,7 @@ import {
   TableSplitCellsIcon,
   PaletteIcon,
   CollapseIcon,
+  SparklesIcon,
 } from "outline-icons";
 import { v4 as uuidv4 } from "uuid";
 import CellBackgroundColorPicker from "../components/CellBackgroundColorPicker";
@@ -470,6 +471,66 @@ export default function formattingMenuItems(
       tooltip: dictionary.copy,
       shortcut: `${metaDisplay}+C`,
       visible: isCode && !isCodeBlock && (!isMobile || !isEmpty),
+    },
+    {
+      name: "separator",
+      visible: !isCodeBlock && !isEmpty,
+    },
+    {
+      tooltip: "AI",
+      icon: <SparklesIcon />,
+      visible: !isCodeBlock && !isEmpty && !isTableCell,
+      children: (): MenuItem[] => [
+        {
+          name: "ai_action",
+          label: "요약하기",
+          attrs: { action: "summarize" },
+        },
+        {
+          name: "ai_action",
+          label: "번역 (한→영)",
+          attrs: { action: "translate_en" },
+        },
+        {
+          name: "ai_action",
+          label: "번역 (영→한)",
+          attrs: { action: "translate_ko" },
+        },
+        {
+          name: "ai_action",
+          label: "확장하기",
+          attrs: { action: "expand" },
+        },
+        {
+          name: "ai_action",
+          label: "맞춤법 교정",
+          attrs: { action: "fix_grammar" },
+        },
+        {
+          name: "ai_action",
+          label: "간결하게",
+          attrs: { action: "simplify" },
+        },
+        {
+          name: "ai_action",
+          label: "공식적 톤",
+          attrs: { action: "change_tone_formal" },
+        },
+        {
+          name: "ai_action",
+          label: "캐주얼 톤",
+          attrs: { action: "change_tone_casual" },
+        },
+        {
+          name: "separator",
+        },
+        {
+          name: "ai_action",
+          label: "자유 프롬프트",
+          icon: <SparklesIcon />,
+          attrs: { action: "freeform" },
+        },
+      ],
     },
   ];
 }

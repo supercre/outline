@@ -65,12 +65,12 @@ module.exports = {
       );
 
       // Create IVFFlat index for cosine similarity search
-      // Using lists = max(1, rows/1000) — start with 100 lists, can tune later
+      // lists should be ~sqrt(rows); start small, rebuild as data grows
       await queryInterface.sequelize.query(
         `CREATE INDEX document_embeddings_embedding_idx
          ON document_embeddings
          USING ivfflat (embedding vector_cosine_ops)
-         WITH (lists = 100);`,
+         WITH (lists = 4);`,
         { transaction }
       );
     });

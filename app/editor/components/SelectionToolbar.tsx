@@ -39,7 +39,16 @@ import { MediaLinkEditor } from "./MediaLinkEditor";
 import FloatingToolbar from "./FloatingToolbar";
 import LinkEditor from "./LinkEditor";
 import ToolbarMenu from "./ToolbarMenu";
+import { AIPromptDialog } from "./AIPromptDialog";
 import { isModKey } from "@shared/utils/keyboard";
+
+type AIDialogState = {
+  isOpen: boolean;
+  action: string;
+  selectedText: string;
+  from: number;
+  to: number;
+};
 
 type Props = {
   /** Whether the text direction is right-to-left */
@@ -88,6 +97,13 @@ export function SelectionToolbar(props: Props) {
   const isActive = props.isActive || isMobile;
   const { state } = view;
   const [autoFocusLinkInput, setAutoFocusLinkInput] = React.useState(false);
+  const [aiDialog, setAiDialog] = React.useState<AIDialogState>({
+    isOpen: false,
+    action: "freeform",
+    selectedText: "",
+    from: 0,
+    to: 0,
+  });
   const isDragging = useIsDragging(state);
   const { selection } = state;
   const [activeToolbar, setActiveToolbar] = React.useState<Toolbar | null>(
@@ -277,6 +293,13 @@ export function SelectionToolbar(props: Props) {
     if (item.name === "dimensions") {
       return item.visible ?? false;
     }
+    // Allow AI submenu parent (no name) and ai_action children through
+    if (!item.name && item.children) {
+      return item.visible !== false;
+    }
+    if (item.name === "ai_action") {
+      return true;
+    }
     if (item.name && !commands[item.name]) {
       return false;
     }
@@ -288,15 +311,43 @@ export function SelectionToolbar(props: Props) {
 
   items = filterExcessSeparators(items);
   items = items.map((item) => {
-    if (item.children && Array.isArray(item.children)) {
-      item.children = item.children.map((child) => {
-        if (child.name === "editImageUrl") {
-          child.onClick = () => {
-            setActiveToolbar(Toolbar.Media);
-          };
-        }
-        return child;
-      });
+    if (item.children) {
+      const resolvedChildren =
+        typeof item.children === "function" ? item.children : item.children;
+      const childArray =
+        typeof resolvedChildren === "function"
+          ? resolvedChildren()
+          : resolvedChildren;
+
+      if (Array.isArray(childArray)) {
+        item.children = childArray.map((child) => {
+          if (child.name === "editImageUrl") {
+            child.onClick = () => {
+              setActiveToolbar(Toolbar.Media);
+            };
+          }
+          if (child.name === "ai_action") {
+            const actionType =
+              typeof child.attrs === "object" &&
+              child.attrs &&
+              "action" in child.attrs
+                ? (child.attrs.action as string)
+                : "freeform";
+            child.onClick = () => {
+              const { from, to } = view.state.selection;
+              const selectedText = view.state.doc.textBetween(from, to, " ");
+              setAiDialog({
+                isOpen: true,
+                action: actionType,
+                selectedText,
+                from,
+                to,
+              });
+            };
+          }
+          return child;
+        });
+      }
     }
 
     if (item.name === "linkOnImage" || item.name === "addLink") {
@@ -316,46 +367,69 @@ export function SelectionToolbar(props: Props) {
   };
 
   return (
-    <FloatingToolbar
-      align={align}
-      active={isActive}
-      ref={menuRef}
-      width={
-        activeToolbar === Toolbar.Link || activeToolbar === Toolbar.Media
-          ? 336
-          : undefined
-      }
-    >
-      {activeToolbar === Toolbar.Link ? (
-        <LinkEditor
-          key={`link-${selection.anchor}`}
-          dictionary={dictionary}
-          autoFocus={autoFocusLinkInput}
-          view={view}
-          mark={linkMark ? linkMark.mark : undefined}
-          onLinkAdd={() => setActiveToolbar(null)}
-          onLinkUpdate={() => setActiveToolbar(null)}
-          onLinkRemove={() => setActiveToolbar(null)}
-          onEscape={() => setActiveToolbar(Toolbar.Menu)}
-          onClickOutside={handleClickOutsideLinkEditor}
-          onClickBack={() => setActiveToolbar(Toolbar.Menu)}
-        />
-      ) : activeToolbar === Toolbar.Media ? (
-        <MediaLinkEditor
-          key={`embed-${selection.anchor}`}
-          node={
-            "node" in selection ? (selection as NodeSelection).node : undefined
-          }
-          view={view}
-          dictionary={dictionary}
-          onLinkUpdate={() => setActiveToolbar(null)}
-          onLinkRemove={() => setActiveToolbar(null)}
-          onEscape={() => setActiveToolbar(Toolbar.Menu)}
-          onClickOutside={handleClickOutsideLinkEditor}
-        />
-      ) : activeToolbar === Toolbar.Menu && items.length ? (
-        <ToolbarMenu items={items} {...rest} />
-      ) : null}
-    </FloatingToolbar>
+    <>
+      <FloatingToolbar
+        align={align}
+        active={isActive}
+        ref={menuRef}
+        width={
+          activeToolbar === Toolbar.Link || activeToolbar === Toolbar.Media
+            ? 336
+            : undefined
+        }
+      >
+        {activeToolbar === Toolbar.Link ? (
+          <LinkEditor
+            key={`link-${selection.anchor}`}
+            dictionary={dictionary}
+            autoFocus={autoFocusLinkInput}
+            view={view}
+            mark={linkMark ? linkMark.mark : undefined}
+            onLinkAdd={() => setActiveToolbar(null)}
+            onLinkUpdate={() => setActiveToolbar(null)}
+            onLinkRemove={() => setActiveToolbar(null)}
+            onEscape={() => setActiveToolbar(Toolbar.Menu)}
+            onClickOutside={handleClickOutsideLinkEditor}
+            onClickBack={() => setActiveToolbar(Toolbar.Menu)}
+          />
+        ) : activeToolbar === Toolbar.Media ? (
+          <MediaLinkEditor
+            key={`embed-${selection.anchor}`}
+            node={
+              "node" in selection
+                ? (selection as NodeSelection).node
+                : undefined
+            }
+            view={view}
+            dictionary={dictionary}
+            onLinkUpdate={() => setActiveToolbar(null)}
+            onLinkRemove={() => setActiveToolbar(null)}
+            onEscape={() => setActiveToolbar(Toolbar.Menu)}
+            onClickOutside={handleClickOutsideLinkEditor}
+          />
+        ) : activeToolbar === Toolbar.Menu && items.length ? (
+          <ToolbarMenu items={items} {...rest} />
+        ) : null}
+      </FloatingToolbar>
+      <AIPromptDialog
+        isOpen={aiDialog.isOpen}
+        action={
+          aiDialog.action as
+            | "freeform"
+            | "summarize"
+            | "translate_ko"
+            | "translate_en"
+            | "expand"
+            | "fix_grammar"
+            | "change_tone_formal"
+            | "change_tone_casual"
+            | "simplify"
+        }
+        selectedText={aiDialog.selectedText}
+        from={aiDialog.from}
+        to={aiDialog.to}
+        onClose={() => setAiDialog((prev) => ({ ...prev, isOpen: false }))}
+      />
+    </>
   );
 }

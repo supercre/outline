@@ -16,3 +16,23 @@ export const AiAnswersStatusSchema = z.object({
 });
 
 export type AiAnswersStatusReq = z.infer<typeof AiAnswersStatusSchema>;
+
+export const AiAnswersWriteSchema = z.object({
+  body: z.object({
+    prompt: z.string().min(1).max(1000),
+    context: z.string().max(10000).optional(),
+    action: z.enum([
+      "freeform",
+      "summarize",
+      "translate_ko",
+      "translate_en",
+      "expand",
+      "fix_grammar",
+      "change_tone_formal",
+      "change_tone_casual",
+      "simplify",
+    ]),
+  }),
+});
+
+export type AiAnswersWriteReq = z.infer<typeof AiAnswersWriteSchema>;

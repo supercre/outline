@@ -56,6 +56,7 @@ export default class GenerateAnswerTask extends BaseTask<Props> {
       }
 
       // Find top 5 similar chunks with permission filtering
+      await sequelize.query("SET LOCAL ivfflat.probes = 10");
       const results = await sequelize.query<EmbeddingResult>(
         `SELECT de.id, de."documentId", de."chunkIndex", de."chunkText",
                 de.embedding <=> :embedding::vector AS distance

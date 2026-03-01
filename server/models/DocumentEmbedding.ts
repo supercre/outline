@@ -27,9 +27,12 @@ class DocumentEmbedding extends IdModel<
   @Column(DataType.TEXT)
   chunkText: string;
 
-  /** The embedding vector (1536 dimensions for text-embedding-3-small). */
-  @Column(DataType.ARRAY(DataType.FLOAT))
-  embedding: number[];
+  /**
+   * The embedding vector (1536 dimensions for text-embedding-3-small).
+   * Stored as pgvector `vector` type, represented as string in Sequelize.
+   */
+  @Column(DataType.TEXT)
+  embedding: string;
 
   // associations
 

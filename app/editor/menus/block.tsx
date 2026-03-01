@@ -23,6 +23,7 @@ import {
   DoneIcon,
   EmbedIcon,
   CollapseIcon,
+  SparklesIcon,
 } from "outline-icons";
 import * as React from "react";
 import styled from "styled-components";
@@ -248,6 +249,16 @@ export default function blockMenuItems(
       title: dictionary.toggleBlock,
       icon: <CollapseIcon />,
       keywords: "toggle collapsible collapse fold",
+    },
+    {
+      name: "separator",
+    },
+    {
+      name: "noop",
+      title: "AI 작성 도우미",
+      icon: <SparklesIcon />,
+      keywords: "ai write generate 작성 생성 인공지능",
+      attrs: { type: "ai_write" },
     },
   ];
 
