@@ -1,3 +1,4 @@
+import MarkdownIt from "markdown-it";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
@@ -6,6 +7,12 @@ import Flex from "~/components/Flex";
 import Text from "~/components/Text";
 import { client } from "~/utils/ApiClient";
 import Logger from "~/utils/Logger";
+
+const md = new MarkdownIt({
+  html: false,
+  breaks: true,
+  linkify: true,
+});
 
 interface AiAnswerProps {
   query: string;
@@ -141,32 +148,13 @@ function AiAnswer({ query }: AiAnswerProps) {
           )}
           {status === "complete" && answer && (
             <AnswerText
-              dangerouslySetInnerHTML={{ __html: formatMarkdown(answer) }}
+              dangerouslySetInnerHTML={{ __html: md.render(answer) }}
             />
           )}
         </Content>
       )}
     </Container>
   );
-}
-
-/**
- * Simple markdown formatting for the answer text.
- * Handles bold, italic, code, and line breaks.
- *
- * @param text - the markdown text to format.
- * @returns html string.
- */
-function formatMarkdown(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
-    .replace(/\n/g, "<br />");
 }
 
 const Container = styled.div`
@@ -235,6 +223,39 @@ const AnswerText = styled.div`
   line-height: 1.6;
   color: ${s("text")};
 
+  > *:first-child {
+    margin-top: 0;
+  }
+
+  > *:last-child {
+    margin-bottom: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 16px 0 8px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h1 {
+    font-size: 1.3em;
+  }
+
+  h2 {
+    font-size: 1.15em;
+  }
+
+  h3 {
+    font-size: 1.05em;
+  }
+
+  p {
+    margin: 8px 0;
+  }
+
   strong {
     font-weight: 600;
   }
@@ -244,6 +265,63 @@ const AnswerText = styled.div`
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 13px;
+  }
+
+  pre {
+    background: ${s("codeBackground")};
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+
+    code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      font-size: 13px;
+    }
+  }
+
+  ul,
+  ol {
+    margin: 8px 0;
+    padding-left: 24px;
+  }
+
+  li {
+    margin: 4px 0;
+  }
+
+  blockquote {
+    border-left: 3px solid ${s("textTertiary")};
+    margin: 8px 0;
+    padding: 4px 12px;
+    color: ${s("textSecondary")};
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid ${s("divider")};
+    margin: 12px 0;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid ${s("divider")};
+    padding: 6px 10px;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  th {
+    background: ${s("sidebarBackground")};
+    font-weight: 600;
   }
 
   a {
